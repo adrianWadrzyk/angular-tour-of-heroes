@@ -4,25 +4,39 @@ import { HEROES } from './mock-heroes';
 import { Observable, of } from 'rxjs';
 import { MessageService } from './message.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { catchError, map, tap } from 'rxjs/operators';
 @Injectable({
   providedIn: 'root'
 })
 export class HeroService {
   private heroesUrl:string = 'api/heroes';
 
-  constructor(private htpp: HttpClient,
+  constructor(private http: HttpClient,
               private messageService : MessageService) { }
 
   
-  getHeroes(): Observable<Hero[]> { 
-    return this.htpp.get<Hero[]>(this.heroesUrl);
-  }
+getHeroes(): Observable<Hero[]> {
+  return this.http.get<Hero[]>(this.heroesUrl)
+    .pipe(
+      tap(_ => this.log('fetched heroes')),
+      catchError(this.handleError<Hero[]>('getHeroes', []))
+    );
+}
   
   getHero(id: number): Observable<Hero> {
     this.messageService.add(`HeroService: fetched hero id=${id}`);
     return of(HEROES.find(hero => hero.id === id));
   }
   
+  private handleError<T>(operation = 'operation', result?: T) { 
+    return (error: any): Observable<T> => { 
+      console.log(error);
+      this.log(`${operation} failed: ${error.message}`);
+
+      return of(result as T);
+    }
+  }
+
   private log(message: string) { 
     this.messageService.add(`HeroService: ${message}`);
   }
